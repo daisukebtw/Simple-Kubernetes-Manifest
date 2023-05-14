@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-web-deployment
+  labels:
+    app: my-k8s-deployment
+spec:
+  selector:
+    matchLabels:
+      project: first
+  template:
+    metadata:
+      labels:
+        project: first
+    spec:
+      containers:
+      - name: first-web
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: my-k8s-autoscaler
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: my-web-deployment
+  minReplicas: 2
+  maxReplicas: 4
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-k8s-balancer
+  labels:
+    env: prod
+    owner: daisuke
+spec:
+  selector:
+    project: first
+  ports:
+  - name: app-listener
+    protocol: TCP
+    port: 80
+    targetPort: 80
+  type: LoadBalancer
